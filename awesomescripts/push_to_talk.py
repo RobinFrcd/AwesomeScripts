@@ -24,14 +24,25 @@ def disable_mic():
     os.system("pacmd set-source-mute @DEFAULT_SOURCE@ 1")
 
 
+def toggle_sound():
+    LOGGER.info("Toggle Sound")
+    os.system("pactl set-sink-mute @DEFAULT_SINK@ toggle")
+
+
 def get_default_source() -> str:
     proc = subprocess.run(["pactl", "get-default-source"], capture_output=True)
     return proc.stdout.decode().strip()
 
 
 class PushToTalk:
-    def __init__(self, ptt_key: str, ppt_toggle_key: Optional[Set[str]] = None):
+    def __init__(
+        self,
+        ptt_key: str,
+        ppt_toggle_key: Optional[Set[str]] = None,
+        sound_toggle_key: Optional[Set[str]] = None,
+    ):
         self.ppt_toggle_key = ppt_toggle_key or set()
+        self.sound_toggle_key = sound_toggle_key or set()
         self.ptt_key = ptt_key
 
         self.__pressed: Set[str] = set()
@@ -58,10 +69,13 @@ class PushToTalk:
             playsound(os.path.join(MEDIAS_FOLDER, "button.wav"), block=False)
             enable_mic()
 
-        if self.ppt_toggle_key.issubset(self.__pressed):
+        if self.ppt_toggle_key and self.ppt_toggle_key.issubset(self.__pressed):
             self.toggle_ptt()
             # hard reset because pynput struggles with key combinations
             self.__pressed = set()
+
+        if self.sound_toggle_key and self.sound_toggle_key.issubset(self.__pressed):
+            toggle_sound()
 
     def on_release(self, key: Key):
         key_str = tools.get_key_str(key)
@@ -77,7 +91,8 @@ class PushToTalk:
     def start_listener(self):
         signal.signal(signal.SIGINT, signal.default_int_handler)
         LOGGER.info(
-            f"Start listening on {get_default_source()}. PTT key: {self.ptt_key}, PTT Toggle: {self.ppt_toggle_key}"
+            f"Start listening on {get_default_source()}. "
+            f"PTT key: {self.ptt_key}, PTT Toggle: {self.ppt_toggle_key}, Mute Sound: {self.sound_toggle_key}"
         )
         try:
             disable_mic()
@@ -93,9 +108,13 @@ class PushToTalk:
 @click.command()
 @click.option("--ppt_key", help="Key name (eg. control_r).", required=True)
 @click.option("--ppt_toggle_key", help="Key name (eg. control_r+!).", required=False)
-def main(ppt_key: str, ppt_toggle_key: Optional[str]):
+@click.option("--sound_toggle_key", help="Key name (eg. control_r+m).", required=False)
+def main(ppt_key: str, ppt_toggle_key: Optional[str], sound_toggle_key: Optional[str]):
     ppt_toggle_keys = set(ppt_toggle_key.split("+")) if ppt_toggle_key else set()
-    ptt = PushToTalk(ppt_key, ppt_toggle_keys)
+    sound_toggle_keys = set(sound_toggle_key.split("+")) if sound_toggle_key else set()
+    ptt = PushToTalk(
+        ppt_key, ppt_toggle_key=ppt_toggle_keys, sound_toggle_key=sound_toggle_keys
+    )
     ptt.start_listener()
 
 
