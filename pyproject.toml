@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "awesomescripts"
+version = "0.1.0"
+description = ""
+authors = ["Robin Fourcade"]
+
+[tool.poetry.scripts]
+ptt = "awesomescripts.push_to_talk:main"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+click = "^8.0.3"
+pynput = "^1.7.6"
+colorlog = "^6.6.0"
+playsound = "^1.3.0"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+flake8 = "*"
+mypy = "*"
+taskipy = "*"
+isort = "*"
+
+[tool.taskipy.tasks]
+black = "black ."
+check-black = "black . --check"
+mypy = "mypy . --ignore-missing-imports"
+isort = "isort ."
+
+[tool.isort]
+profile = "black"
+atomic = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
