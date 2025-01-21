@@ -1,25 +1,24 @@
-[tool.poetry]
+[project]
 name = "awesomescripts"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
-authors = ["Robin Fourcade"]
+authors = [{ name = "Robin Fourcade", email = "github_robinfrcd.o6anq@simplelogin.com" }]
+requires-python = ">=3.8,<3.13" # While https://github.com/moses-palmer/pynput/issues/614 is not fixed
+dependencies = [
+    "click (>8.0)",
+    "pynput (>1.7)",
+    "colorlog (>6.6)",
+]
 
-[tool.poetry.scripts]
-ptt = "awesomescripts.push_to_talk:main"
-
-[tool.poetry.dependencies]
-python = "^3.8"
-click = "^8.0.3"
-pynput = "^1.7.6"
-colorlog = "^6.6.0"
-playsound = "^1.3.0"
-
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "*"
 flake8 = "*"
 mypy = "*"
 taskipy = "*"
 isort = "*"
+
+[tool.poetry.scripts]
+ptt = "awesomescripts.push_to_talk:main"
 
 [tool.taskipy.tasks]
 black = "black ."

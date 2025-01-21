@@ -3,6 +3,7 @@
 ## Push To Talk
 
 Implements a system-wide Push-To-Talk for linux.
+This package uses `pulseaudio-utils` to play sounds.
 
 Example:
 `poetry run ptt --ppt_key ctrl_r --ppt_toggle_key ctrl_r+! --sound_toggle_key ctrl_r+:`

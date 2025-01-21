@@ -5,7 +5,6 @@ from logging import getLogger
 from typing import Optional, Set
 
 import click
-from playsound import playsound
 from pynput import keyboard
 from pynput.keyboard import Key
 
@@ -16,12 +15,23 @@ tools.set_logger()
 LOGGER = getLogger(__name__)
 
 
+def play_sound(file_path: str):
+    """Play a sound file using paplay (PulseAudio)"""
+    try:
+        # Using subprocess.Popen to avoid blocking and prevent shell injection
+        subprocess.Popen(
+            ["paplay", file_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except Exception as e:
+        LOGGER.error(f"Failed to play sound: {e}")
+
+
 def enable_mic():
-    os.system("pacmd set-source-mute @DEFAULT_SOURCE@ 0")
+    os.system("pactl set-source-mute @DEFAULT_SOURCE@ 0")
 
 
 def disable_mic():
-    os.system("pacmd set-source-mute @DEFAULT_SOURCE@ 1")
+    os.system("pactl set-source-mute @DEFAULT_SOURCE@ 1")
 
 
 def toggle_sound():
@@ -49,7 +59,7 @@ class PushToTalk:
         self.__is_ptt_enabled: bool = True
 
     def toggle_ptt(self):
-        playsound(os.path.join(MEDIAS_FOLDER, "snap.wav"), block=False)
+        play_sound(os.path.join(MEDIAS_FOLDER, "snap.wav"))
         if self.__is_ptt_enabled:
             LOGGER.info("Disable PTT")
             enable_mic()
@@ -66,7 +76,7 @@ class PushToTalk:
 
         if self.__is_ptt_enabled and key_str == self.ptt_key:
             LOGGER.info(f"Enable mic with {key_str}")
-            playsound(os.path.join(MEDIAS_FOLDER, "button.wav"), block=False)
+            play_sound(os.path.join(MEDIAS_FOLDER, "button.wav"))
             enable_mic()
 
         if self.ppt_toggle_key and self.ppt_toggle_key.issubset(self.__pressed):
@@ -83,7 +93,7 @@ class PushToTalk:
 
         if self.__is_ptt_enabled and key_str == self.ptt_key:
             LOGGER.info(f"Disable mic with {key_str}")
-            playsound(os.path.join(MEDIAS_FOLDER, "button.wav"), block=False)
+            play_sound(os.path.join(MEDIAS_FOLDER, "button.wav"))
             disable_mic()
 
         self.__pressed.discard(key_str)
