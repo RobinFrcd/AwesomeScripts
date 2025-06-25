@@ -6,7 +6,7 @@ Implements a system-wide Push-To-Talk for linux.
 This package uses `pulseaudio-utils` to play sounds.
 
 Example:
-`poetry run ptt --ppt_key ctrl_r --ppt_toggle_key ctrl_r+! --sound_toggle_key ctrl_r+:`
+`uv run ptt --ppt_key ctrl_r --ppt_toggle_key ctrl_r+! --sound_toggle_key ctrl_r+:`
 
 `Right CTRL` will be used to activate the microphone, `Right CTRL + !` to toggle the push to talk,
 `Right CTRL + :` to toggle (output) sound.

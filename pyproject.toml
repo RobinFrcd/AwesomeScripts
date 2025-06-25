@@ -3,21 +3,16 @@ name = "awesomescripts"
 version = "0.2.0"
 description = ""
 authors = [{ name = "Robin Fourcade", email = "github_robinfrcd.o6anq@simplelogin.com" }]
-requires-python = ">=3.8,<4.0"
+requires-python = ">=3.8"
 dependencies = [
-    "click (>8.0)",
-    "colorlog (>6.6)",
-    "evdev (>=1.9.1,<2.0.0)",
+    "click>8.0",
+    "colorlog>6.6",
+    "evdev>=1.9.1,<2.0.0",
 ]
 
-[tool.poetry.group.dev.dependencies]
-black = "*"
-flake8 = "*"
-mypy = "*"
-taskipy = "*"
-isort = "*"
 
-[tool.poetry.scripts]
+
+[project.scripts]
 ptt = "awesomescripts.push_to_talk:main"
 
 [tool.taskipy.tasks]
@@ -31,5 +26,14 @@ profile = "black"
 atomic = true
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "black>=24.8.0",
+    "flake8>=5.0.4",
+    "isort>=5.13.2",
+    "mypy>=1.14.1",
+    "taskipy>=1.14.1",
+]
