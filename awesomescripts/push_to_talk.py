@@ -1,3 +1,4 @@
+import asyncio
 import os
 import signal
 import subprocess
@@ -5,8 +6,7 @@ from logging import getLogger
 from typing import Optional, Set
 
 import click
-from pynput import keyboard
-from pynput.keyboard import Key
+from evdev import InputDevice, categorize, ecodes, list_devices
 
 from awesomescripts import tools
 from awesomescripts.constants import MEDIAS_FOLDER
@@ -57,20 +57,39 @@ class PushToTalk:
 
         self.__pressed: Set[str] = set()
         self.__is_ptt_enabled: bool = True
+        self.__devices = self._find_keyboard_devices()
 
-    def toggle_ptt(self):
-        play_sound(os.path.join(MEDIAS_FOLDER, "snap.wav"))
-        if self.__is_ptt_enabled:
-            LOGGER.info("Disable PTT")
-            enable_mic()
-            self.__is_ptt_enabled = False
-        else:
-            LOGGER.info("Enable PTT")
-            disable_mic()
-            self.__is_ptt_enabled = True
+    def _find_keyboard_devices(self):
+        """Find all keyboard input devices"""
+        devices = []
+        for path in list_devices():
+            try:
+                device = InputDevice(path)
+                if device.capabilities().get(ecodes.EV_KEY):
+                    devices.append(device)
+            except Exception as e:
+                LOGGER.error(f"Failed to open device {path}: {e}")
+        return devices
 
-    def on_press(self, key: Key):
-        key_str = tools.get_key_str(key)
+    async def _handle_events(self, device):
+        """Handle events from a single device"""
+        async for event in device.async_read_loop():
+            if event.type == ecodes.EV_KEY:
+                key_event = categorize(event)
+                try:
+                    key_name = ecodes.KEY[key_event.scancode]
+                    key_str = key_name.lower().replace("key_", "")
+                    LOGGER.debug(f"Detected key: {key_name} -> {key_str}")
+                except KeyError:
+                    LOGGER.debug(f"Unknown scancode: {key_event.scancode}")
+                    continue
+
+                if key_event.keystate == 1:  # Key pressed
+                    await self._handle_key_press(key_str)
+                elif key_event.keystate == 0:  # Key released
+                    await self._handle_key_release(key_str)
+
+    async def _handle_key_press(self, key_str):
         self.__pressed.add(key_str)
         LOGGER.debug(f"on_press: {key_str}, pressed: {self.__pressed}")
 
@@ -87,8 +106,7 @@ class PushToTalk:
         if self.sound_toggle_key and self.sound_toggle_key.issubset(self.__pressed):
             toggle_sound()
 
-    def on_release(self, key: Key):
-        key_str = tools.get_key_str(key)
+    async def _handle_key_release(self, key_str):
         LOGGER.debug(f"on_release: {key_str}")
 
         if self.__is_ptt_enabled and key_str == self.ptt_key:
@@ -98,21 +116,39 @@ class PushToTalk:
 
         self.__pressed.discard(key_str)
 
+    def toggle_ptt(self):
+        play_sound(os.path.join(MEDIAS_FOLDER, "snap.wav"))
+        if self.__is_ptt_enabled:
+            LOGGER.info("Disable PTT")
+            enable_mic()
+            self.__is_ptt_enabled = False
+        else:
+            LOGGER.info("Enable PTT")
+            disable_mic()
+            self.__is_ptt_enabled = True
+
     def start_listener(self):
         signal.signal(signal.SIGINT, signal.default_int_handler)
         LOGGER.info(
             f"Start listening on {get_default_source()}. "
             f"PTT key: {self.ptt_key}, PTT Toggle: {self.ppt_toggle_key}, Mute Sound: {self.sound_toggle_key}"
         )
+
+        if not self.__devices:
+            LOGGER.error("No keyboard devices found!")
+            return
+
         try:
             disable_mic()
-
-            with keyboard.Listener(
-                on_press=self.on_press, on_release=self.on_release
-            ) as listener:
-                listener.join()
+            loop = asyncio.get_event_loop()
+            tasks = [self._handle_events(device) for device in self.__devices]
+            loop.run_until_complete(asyncio.gather(*tasks))
+        except KeyboardInterrupt:
+            LOGGER.info("Stopping listener...")
         finally:
             disable_mic()
+            for device in self.__devices:
+                device.close()
 
 
 @click.command()

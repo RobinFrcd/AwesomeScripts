@@ -3,16 +3,8 @@ import os
 import sys
 
 import colorlog
-from pynput.keyboard import Key
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
-
-
-def get_key_str(key: Key) -> str:
-    try:
-        return key.char
-    except AttributeError:
-        return key.name
 
 
 def set_logger():
